@@ -1,0 +1,129 @@
+
+#include "YLH_Connector_Handler.h"
+#include "YLH_Connector.h"
+
+static const int timer_id = -1;
+
+
+YLH_Connector_Handler::YLH_Connector_Handler()
+:m_Owner_Connector(NULL)
+{
+
+}
+YLH_Connector_Handler::YLH_Connector_Handler(YLH_Connector* owner_Connector, ACE_Reactor* owner_Reactor, YLH_Connect_Info& connect_info)
+//:m_connector_notification(0, this, ACE_Event_Handler::ALL_EVENTS_MASK)
+:m_Owner_Connector(owner_Connector)
+,m_Connect_info(connect_info)
+{
+    //m_connector_notification = new ACE_Reactor_Notification_Strategy(ACE_Reactor::instance());
+}
+
+int YLH_Connector_Handler::open( void * p )
+{
+    ACE_Time_Value connect_delay(2);    //2ÃëÁ¬Ò»´Î
+
+    if (-1 == super::open(this))
+    {
+        return -1;
+    }
+
+    m_Owner_Connector = (YLH_Connector*) p;
+
+    reactor(m_Owner_Connector->get_Owner_Reactor());
+
+
+    this->reactor()->register_handler(this, ACE_Event_Handler::WRITE_MASK);
+    this->reactor()->mask_ops(this, ACE_Event_Handler::WRITE_MASK, ACE_Reactor::CLR_MASK);
+    //m_Owner_Connector->reactor()->register_handler(this, ACE_Event_Handler::CONNECT_MASK);
+
+    //m_Owner_Connector->reactor()->register_handler(this, ACE_Event_Handler::CONNECT_MASK | 
+    //                                                    ACE_Event_Handler::READ_MASK | 
+    //                                                    ACE_Event_Handler::WRITE_MASK);
+
+    //m_connector_notification.reactor(m_Owner_Reactor);
+
+    //m_Owner_Connector->reactor()->register_handler(this, ACE_Event_Handler::ACCEPT_MASK);
+
+    //msg_queue()->notification_strategy(&m_connector_notification);
+
+    static const int flag = -1;
+    //reactor()->schedule_timer(this, reinterpret_cast<const void*>(&flag), connect_delay, connect_delay);
+    
+    reactor()->schedule_timer(this, (void*)(timer_id), ACE_Time_Value(5));
+    return 0;
+}
+
+int YLH_Connector_Handler::handle_input( ACE_HANDLE fd /* = ACE_INVALID_HANDLE */ )
+{
+    printf("YLH_Connector_Handler::handle_input\n");
+
+    static const size_t RECV_BUF_SIZE = 1024 * 4;
+
+    static int  get_length = 0;
+
+    // local receive buffer.
+    char recvbuf[RECV_BUF_SIZE] = { 0 };
+
+    // If has prev message then prepend to local receive buffer.
+
+    // actually received size.
+    int s_recv = 0;
+
+    // read socket buffer as much as possible.
+
+    // read data into local buffer from socket.
+    for (; (s_recv = this->peer().recv(recvbuf, RECV_BUF_SIZE)) > 0;) {
+
+        get_length += s_recv;
+        printf("%s", recvbuf);
+        //process_received_buffer(recvbuf, s_recv);
+    }
+
+
+    // MF_ERROR("length = %d!..... \n", get_length);
+
+    int last_err = ACE_OS::last_error();
+
+    if (s_recv == -1 &&  last_err == EWOULDBLOCK) 
+    {
+        return 0;
+    }
+
+    return -1;
+}
+
+int YLH_Connector_Handler::handle_output( ACE_HANDLE fd /* = ACE_INVALID_HANDLE */ )
+{
+    printf("YLH_Connector_Handler::handle_output\n");
+    return -1;
+}
+
+//int YLH_Connector_Handler::handle_timeout (const ACE_Time_Value &time, const void *)
+//{
+//    printf("YLH_Connector_Handler::handle_timeout\n");
+//    return 1;
+//}
+
+int YLH_Connector_Handler::handle_close( ACE_HANDLE /*= ACE_INVALID_HANDLE*/, ACE_Reactor_Mask /*= ACE_Event_Handler::ALL_EVENTS_MASK*/ )
+{
+    printf("YLH_Connector_Handler::handle_close\n");
+    return 1;
+}
+
+
+int YLH_Connector_Handler::handle_timeout( const ACE_Time_Value &time, const void * act)
+{
+    std::string send_buff("send_buff1111");
+    int act_id(static_cast<int>(reinterpret_cast<const intptr_t>(act)));
+    if(act_id == timer_id)
+    {		
+        int  send_size = peer().send(send_buff.c_str(), send_buff.size());
+
+        printf("YLH_Connector_Handler::handle_timeout send_size[%d]\n", send_size);
+        int kk = 0;
+    }
+
+    return 0;
+}
+
+

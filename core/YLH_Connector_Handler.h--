@@ -1,0 +1,49 @@
+
+
+
+//
+
+
+#ifndef _YLH_CONNECTOR_HANDLER_H
+#define _YLH_CONNECTOR_HANDLER_H
+
+#include "ace/Global_Macros.h"
+#include "ace/Svc_Handler.h"
+#include "ace/SOCK_Stream.h"
+#include "ace/Reactor_Notification_Strategy.h"
+#include "YLH_Server_Info.h"
+
+
+class YLH_Connector;
+struct YLH_Connect_Info;
+
+class YLH_Connector_Handler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_MT_SYNCH>
+{
+
+    typedef ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_MT_SYNCH> super;
+
+public:
+    YLH_Connector_Handler();
+    YLH_Connector_Handler(YLH_Connector* connector, ACE_Reactor* owner_Reactor, YLH_Connect_Info& connect_info);
+    
+    virtual int open (void * = 0);
+
+    virtual int handle_input(ACE_HANDLE fd /* = ACE_INVALID_HANDLE */);
+
+    virtual int handle_output(ACE_HANDLE fd /* = ACE_INVALID_HANDLE */);
+
+    virtual int handle_timeout (const ACE_Time_Value &time, const void *);
+        
+    virtual int handle_close (ACE_HANDLE = ACE_INVALID_HANDLE, ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+
+public:
+    //ACE_Reactor_Notification_Strategy           m_connector_notification;
+
+    YLH_Connector*  m_Owner_Connector;
+
+    YLH_Connect_Info m_Connect_info;
+};
+
+
+
+#endif  //_YLH_CONNECTOR_HANDLER_H
